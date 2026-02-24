@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CosmicSeer — AI Astrologer & Palm Reader</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c9a84c;
+    --gold-light: #f0d080;
+    --gold-dim: #7a5f28;
+    --bg: #03020a;
+    --bg2: #07050f;
+    --blue-glow: #1a2a6c;
+    --purple: #4a1a6c;
+    --text: #e8dfc0;
+    --text-dim: #8a7a5a;
+    --accent: #e8a030;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Cormorant Garamond', serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* CUSTOM CURSOR */
+  #cursor {
+    position: fixed;
+    width: 20px; height: 20px;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: all 0.1s ease;
+    mix-blend-mode: difference;
+  }
+  #cursor-dot {
+    position: fixed;
+    width: 4px; height: 4px;
+    background: var(--gold-light);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+  }
+
+  /* STARFIELD CANVAS */
+  #starCanvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ZODIAC WHEEL */
+  #zodiacCanvas {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 0;
+    opacity: 0.06;
+    pointer-events: none;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 60px;
+    background: linear-gradient(180deg, rgba(3,2,10,0.95) 0%, transparent 100%);
+    border-bottom: 1px solid rgba(201,168,76,0.1);
+  }
+
+  .nav-logo {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.4rem;
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-shadow: 0 0 30px rgba(201,168,76,0.5);
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 40px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+
+  .nav-links a:hover { color: var(--gold); }
+
+  /* HERO */
+  #hero {
+    position: relative;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    z-index: 1;
+  }
+
+  .hero-eyebrow {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 24px;
+    animation: fadeInUp 1s ease 0.3s both;
+  }
+
+  .hero-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(2.5rem, 7vw, 5.5rem);
+    font-weight: 900;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #f0d080 0%, #c9a84c 40%, #e8a030 70%, #f0d080 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    animation: fadeInUp 1s ease 0.5s both;
+    margin-bottom: 16px;
+    filter: drop-shadow(0 0 40px rgba(201,168,76,0.4));
+  }
+
+  .hero-sub {
+    font-size: 1.3rem;
+    font-style: italic;
+    color: var(--text-dim);
+    margin-bottom: 60px;
+    animation: fadeInUp 1s ease 0.7s both;
+    max-width: 500px;
+  }
+
+  .hero-orb {
+    position: absolute;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(74,26,108,0.6), rgba(26,42,108,0.4), transparent 70%);
+    border: 1px solid rgba(201,168,76,0.15);
+    animation: orbRotate 20s linear infinite;
+    box-shadow: 0 0 100px rgba(74,26,108,0.3), inset 0 0 80px rgba(26,42,108,0.2);
+  }
+
+  .hero-orb::before {
+    content: '';
+    position: absolute;
+    inset: 15px;
+    border-radius: 50%;
+    border: 1px solid rgba(201,168,76,0.08);
+    animation: orbRotate 12s linear infinite reverse;
+  }
+
+  .hero-orb::after {
+    content: '';
+    position: absolute;
+    inset: 40px;
+    border-radius: 50%;
+    border: 1px solid rgba(201,168,76,0.05);
+    animation: orbRotate 8s linear infinite;
+  }
+
+  @keyframes orbRotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .cta-group {
+    display: flex;
+    gap: 20px;
+    animation: fadeInUp 1s ease 0.9s both;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn-primary {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 16px 40px;
+    background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+    color: #0a0805;
+    border: none;
+    cursor: none;
+    clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+    transition: all 0.3s;
+    font-weight: 600;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent, rgba(255,255,255,0.2), transparent);
+    transform: translateX(-100%);
+    transition: 0.4s;
+  }
+
+  .btn-primary:hover::after { transform: translateX(100%); }
+  .btn-primary:hover { box-shadow: 0 0 40px rgba(201,168,76,0.5); }
+
+  .btn-ghost {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 15px 40px;
+    background: transparent;
+    color: var(--gold);
+    border: 1px solid rgba(201,168,76,0.4);
+    cursor: none;
+    clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+    transition: all 0.3s;
+  }
+
+  .btn-ghost:hover { background: rgba(201,168,76,0.08); border-color: var(--gold); }
+
+  /* SCROLL INDICATOR */
+  .scroll-indicator {
+    position: absolute;
+    bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    animation: fadeInUp 1s ease 1.5s both;
+  }
+
+  .scroll-indicator span {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 4px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .scroll-line {
+    width: 1px;
+    height: 50px;
+    background: linear-gradient(180deg, var(--gold), transparent);
+    animation: scrollPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.3; transform: scaleY(1); }
+    50% { opacity: 1; transform: scaleY(1.2); }
+  }
+
+  /* SECTIONS */
+  section {
+    position: relative;
+    z-index: 1;
+    padding: 100px 60px;
+  }
+
+  .section-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .section-label::before, .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dim));
+  }
+
+  .section-label::after {
+    background: linear-gradient(90deg, var(--gold-dim), transparent);
+  }
+
+  .section-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    text-align: center;
+    background: linear-gradient(135deg, var(--gold-light), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 60px;
+  }
+
+  /* DIVIDER */
+  .divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin: 0 60px;
+    opacity: 0.3;
+  }
+
+  .divider-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold));
+  }
+
+  .divider-line:last-child {
+    background: linear-gradient(90deg, var(--gold), transparent);
+  }
+
+  .divider-symbol {
+    color: var(--gold);
+    font-size: 1.2rem;
+  }
+
+  /* PREDICTION FORM */
+  #predict {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 30px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+  }
+
+  input, select, textarea {
+    background: rgba(201,168,76,0.04);
+    border: 1px solid rgba(201,168,76,0.2);
+    color: var(--text);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    padding: 14px 18px;
+    outline: none;
+    transition: all 0.3s;
+    width: 100%;
+    cursor: none;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--gold);
+    background: rgba(201,168,76,0.07);
+    box-shadow: 0 0 20px rgba(201,168,76,0.1);
+  }
+
+  select option { background: #0a0810; }
+
+  textarea { resize: vertical; min-height: 100px; }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 40px;
+    border-bottom: 1px solid rgba(201,168,76,0.15);
+    overflow-x: auto;
+  }
+
+  .tab {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 16px 28px;
+    color: var(--text-dim);
+    cursor: none;
+    border: none;
+    background: none;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s;
+    white-space: nowrap;
+  }
+
+  .tab:hover { color: var(--gold); }
+
+  .tab.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* PREDICTION RESULT */
+  #result-box {
+    margin-top: 40px;
+    display: none;
+  }
+
+  .result-panel {
+    background: rgba(201,168,76,0.03);
+    border: 1px solid rgba(201,168,76,0.15);
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .result-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 30px;
+    margin-top: 30px;
+  }
+
+  .result-card {
+    text-align: center;
+    padding: 24px;
+    border: 1px solid rgba(201,168,76,0.1);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s;
+  }
+
+  .result-card:hover {
+    border-color: rgba(201,168,76,0.35);
+    background: rgba(201,168,76,0.03);
+  }
+
+  .result-card-icon {
+    font-size: 2rem;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .result-card-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 8px;
+  }
+
+  .result-card-value {
+    font-size: 1.3rem;
+    color: var(--gold-light);
+    font-weight: 600;
+  }
+
+  .result-card-detail {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-top: 6px;
+  }
+
+  /* METER BAR */
+  .meter-wrap { margin: 8px 0; }
+  .meter-label-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  .meter-bar {
+    height: 3px;
+    background: rgba(201,168,76,0.1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .meter-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold-dim), var(--gold-light));
+    width: 0%;
+    transition: width 1.5s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: 0 0 10px rgba(201,168,76,0.4);
+  }
+
+  /* PERIOD TIMELINE */
+  .timeline {
+    position: relative;
+    padding-left: 30px;
+    margin-top: 30px;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(180deg, var(--gold-dim), transparent);
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 24px;
+    padding: 16px 20px;
+    border: 1px solid rgba(201,168,76,0.1);
+    background: rgba(201,168,76,0.02);
+    transition: all 0.3s;
+  }
+
+  .timeline-item:hover {
+    border-color: rgba(201,168,76,0.3);
+  }
+
+  .timeline-dot {
+    position: absolute;
+    left: -35px; top: 20px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 1px solid var(--gold);
+    background: var(--bg);
+  }
+
+  .timeline-dot.good { background: rgba(100,200,100,0.3); border-color: #6cc; }
+  .timeline-dot.bad { background: rgba(200,80,80,0.3); border-color: #c66; }
+  .timeline-dot.neutral { background: rgba(200,180,80,0.3); }
+
+  .timeline-period {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 3px;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+
+  .timeline-desc {
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  .badge-good { color: #6c9; }
+  .badge-bad { color: #c66; }
+  .badge-neutral { color: var(--gold); }
+
+  /* PALM READING */
+  #palm-section .palm-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+
+  .palm-upload-zone {
+    border: 1px dashed rgba(201,168,76,0.3);
+    padding: 60px 40px;
+    text-align: center;
+    cursor: none;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .palm-upload-zone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(201,168,76,0.03), transparent 70%);
+    pointer-events: none;
+  }
+
+  .palm-upload-zone:hover {
+    border-color: var(--gold);
+    background: rgba(201,168,76,0.03);
+  }
+
+  .palm-upload-zone input[type=file] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: none;
+    width: 100%;
+    height: 100%;
+  }
+
+  .palm-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    display: block;
+    filter: drop-shadow(0 0 20px rgba(201,168,76,0.3));
+  }
+
+  .palm-upload-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.1rem;
+    color: var(--gold);
+    margin-bottom: 10px;
+  }
+
+  .palm-upload-sub {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  #palm-preview {
+    width: 100%;
+    border: 1px solid rgba(201,168,76,0.2);
+    display: none;
+    margin-top: 12px;
+  }
+
+  .palm-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .line-card {
+    padding: 20px;
+    border: 1px solid rgba(201,168,76,0.1);
+    background: rgba(201,168,76,0.02);
+    transition: all 0.3s;
+  }
+
+  .line-card:hover {
+    border-color: rgba(201,168,76,0.3);
+    background: rgba(201,168,76,0.04);
+  }
+
+  .line-name {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 0.9rem;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+
+  .line-reading {
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    font-style: italic;
+    line-height: 1.6;
+  }
+
+  /* ZODIAC GRID */
+  .zodiac-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    margin-top: 40px;
+  }
+
+  .zodiac-card {
+    padding: 30px 20px;
+    text-align: center;
+    border: 1px solid rgba(201,168,76,0.05);
+    transition: all 0.4s;
+    cursor: none;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .zodiac-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(201,168,76,0.06), transparent 70%);
+    opacity: 0;
+    transition: 0.3s;
+  }
+
+  .zodiac-card:hover::before { opacity: 1; }
+  .zodiac-card:hover { border-color: rgba(201,168,76,0.25); }
+
+  .zodiac-glyph {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    display: block;
+    transition: transform 0.3s;
+  }
+
+  .zodiac-card:hover .zodiac-glyph { transform: scale(1.2); }
+
+  .zodiac-name {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 0.7rem;
+    color: var(--gold);
+    letter-spacing: 2px;
+  }
+
+  .zodiac-date {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  /* FEATURES */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    margin-top: 40px;
+  }
+
+  .feature-card {
+    padding: 40px 30px;
+    border: 1px solid rgba(201,168,76,0.07);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s;
+  }
+
+  .feature-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+    transform: scaleX(0);
+    transition: 0.4s;
+  }
+
+  .feature-card:hover::after { transform: scaleX(1); }
+  .feature-card:hover { background: rgba(201,168,76,0.025); }
+
+  .feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    display: block;
+  }
+
+  .feature-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1rem;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+
+  .feature-desc {
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    font-style: italic;
+    line-height: 1.7;
+  }
+
+  /* LOADING ANIMATION */
+  .loading-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(3,2,10,0.9);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  .loading-overlay.active { display: flex; }
+
+  .cosmic-loader {
+    width: 120px; height: 120px;
+    position: relative;
+  }
+
+  .loader-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid transparent;
+  }
+
+  .loader-ring:nth-child(1) {
+    inset: 0;
+    border-top-color: var(--gold);
+    animation: spin 1.5s linear infinite;
+  }
+
+  .loader-ring:nth-child(2) {
+    inset: 15px;
+    border-right-color: var(--accent);
+    animation: spin 2s linear infinite reverse;
+  }
+
+  .loader-ring:nth-child(3) {
+    inset: 30px;
+    border-bottom-color: var(--gold-dim);
+    animation: spin 1s linear infinite;
+  }
+
+  .loader-center {
+    position: absolute;
+    inset: 45px;
+    background: radial-gradient(circle, var(--gold-dim), transparent);
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.1); }
+  }
+
+  .loading-text {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1rem;
+    color: var(--gold);
+    letter-spacing: 4px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  /* FOOTER */
+  footer {
+    position: relative;
+    z-index: 1;
+    padding: 60px;
+    text-align: center;
+    border-top: 1px solid rgba(201,168,76,0.08);
+  }
+
+  .footer-logo {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.5rem;
+    color: var(--gold);
+    margin-bottom: 20px;
+    display: block;
+  }
+
+  .footer-desc {
+    font-style: italic;
+    color: var(--text-dim);
+    max-width: 400px;
+    margin: 0 auto 30px;
+    font-size: 0.95rem;
+  }
+
+  .footer-copy {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    opacity: 0.5;
+    text-transform: uppercase;
+  }
+
+  /* FLOATING PARTICLES */
+  .particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 0;
+    border-radius: 50%;
+    animation: floatParticle linear infinite;
+    opacity: 0;
+  }
+
+  @keyframes floatParticle {
+    0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 0.5; }
+    100% { transform: translateY(-10vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    nav { padding: 16px 24px; }
+    .nav-links { display: none; }
+    section { padding: 60px 24px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .palm-container { grid-template-columns: 1fr !important; }
+    .features-grid { grid-template-columns: 1fr; }
+    .zodiac-grid { grid-template-columns: repeat(3, 1fr); }
+    .hero-orb { width: 300px; height: 300px; }
+    .result-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* GLOW PULSE */
+  @keyframes glowPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(201,168,76,0.1); }
+    50% { box-shadow: 0 0 60px rgba(201,168,76,0.3); }
+  }
+
+  /* REVEAL ANIMATION */
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* NOTIFICATION */
+  .notif {
+    position: fixed;
+    bottom: 30px; right: 30px;
+    z-index: 300;
+    padding: 16px 24px;
+    background: rgba(10,8,20,0.95);
+    border: 1px solid var(--gold);
+    color: var(--text);
+    font-style: italic;
+    font-size: 0.95rem;
+    max-width: 300px;
+    transform: translateX(120%);
+    transition: 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: 0 0 30px rgba(201,168,76,0.2);
+  }
+
+  .notif.show { transform: translateX(0); }
+</style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div id="cursor"></div>
+<div id="cursor-dot"></div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loader">
+  <div class="cosmic-loader">
+    <div class="loader-ring"></div>
+    <div class="loader-ring"></div>
+    <div class="loader-ring"></div>
+    <div class="loader-center"></div>
+  </div>
+  <div class="loading-text">Consulting the Stars...</div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif"></div>
+
+<!-- BACKGROUND -->
+<canvas id="starCanvas"></canvas>
+<canvas id="zodiacCanvas" width="900" height="900"></canvas>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">✦ CosmicSeer</div>
+  <ul class="nav-links">
+    <li><a href="#predict">Predictions</a></li>
+    <li><a href="#palm-section">Palm Reading</a></li>
+    <li><a href="#thumb-section">Thumb Analysis</a></li>
+    <li><a href="#zodiac-section">Zodiac</a></li>
+    <li><a href="#about">About</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-orb" style="position:absolute; z-index:0;"></div>
+  <div style="position:relative; z-index:1;">
+    <div class="hero-eyebrow">✦ Ancient Wisdom × Modern AI ✦</div>
+    <h1 class="hero-title">CosmicSeer</h1>
+    <p class="hero-sub">Unveil your destiny through the stars, the planets, and the sacred lines of your hands</p>
+    <div class="cta-group">
+      <button class="btn-primary" onclick="document.getElementById('predict').scrollIntoView({behavior:'smooth'})">Begin Reading</button>
+      <button class="btn-ghost" onclick="document.getElementById('palm-section').scrollIntoView({behavior:'smooth'})">Palm Analysis</button>
+    </div>
+  </div>
+  <div class="scroll-indicator">
+    <div class="scroll-line"></div>
+    <span>Scroll to Reveal</span>
+  </div>
+</section>
+
+<div class="divider"><div class="divider-line"></div><div class="divider-symbol">✦</div><div class="divider-line"></div></div>
+
+<!-- FEATURES -->
+<section id="about">
+  <div class="section-label">What We Offer</div>
+  <h2 class="section-title">Ancient Arts, Digital Precision</h2>
+  <div class="features-grid reveal">
+    <div class="feature-card">
+      <span class="feature-icon">🌟</span>
+      <div class="feature-title">Vedic Astrology</div>
+      <p class="feature-desc">Based on Jyotish traditions with thousands of years of accumulated wisdom. Your birth chart reveals your soul's journey, karma, and destiny across this lifetime.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🤚</span>
+      <div class="feature-title">Palm Reading</div>
+      <p class="feature-desc">The heart line, head line, life line, and fate line — each crease of your palm is a chapter in your story. Upload your palm for deep analysis of all major and minor lines.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">👍</span>
+      <div class="feature-title">Thumb Reading</div>
+      <p class="feature-desc">Thumb phalanges reveal willpower, logic, and love. The angle, flexibility, and shape of your thumb speaks to your core personality and fate trajectory.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">💫</span>
+      <div class="feature-title">Career Forecast</div>
+      <p class="feature-desc">Planetary periods (Dashas), transits of Saturn and Jupiter, and your 10th house alignment reveal your professional peak years and best career domains.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">💍</span>
+      <div class="feature-title">Marriage Timing</div>
+      <p class="feature-desc">Venus, the 7th house, and Rahu/Ketu axis determine your ideal marriage window. Know your compatibility, auspicious years, and relationship challenges.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">💰</span>
+      <div class="feature-title">Financial Growth</div>
+      <p class="feature-desc">Your 2nd, 8th, and 11th house lords combined with Jupiter's transit paint a clear picture of your wealth accumulation phases and investment timing.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"><div class="divider-line"></div><div class="divider-symbol">☽</div><div class="divider-line"></div></div>
+
+<!-- PREDICTION SECTION -->
+<section id="predict" style="max-width: 960px; margin: 0 auto;">
+  <div class="section-label">Birth Chart Analysis</div>
+  <h2 class="section-title">Your Cosmic Blueprint</h2>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="birth">Birth Details</button>
+    <button class="tab" data-tab="career">Career</button>
+    <button class="tab" data-tab="marriage">Marriage</button>
+    <button class="tab" data-tab="finance">Finance</button>
+    <button class="tab" data-tab="periods">Life Periods</button>
+  </div>
+
+  <!-- BIRTH DETAILS TAB -->
+  <div class="tab-content active" id="tab-birth">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="name" placeholder="Your full name">
+      </div>
+      <div class="form-group">
+        <label>Date of Birth</label>
+        <input type="date" id="dob">
+      </div>
+      <div class="form-group">
+        <label>Time of Birth</label>
+        <input type="time" id="tob">
+      </div>
+      <div class="form-group">
+        <label>Place of Birth</label>
+        <input type="text" id="pob" placeholder="City, Country">
+      </div>
+      <div class="form-group">
+        <label>Gender</label>
+        <select id="gender">
+          <option value="">Select gender</option>
+          <option>Male</option>
+          <option>Female</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Sun Sign (if known)</label>
+        <select id="sunsign">
+          <option value="">Auto-detect from DOB</option>
+          <option>Aries ♈</option><option>Taurus ♉</option><option>Gemini ♊</option>
+          <option>Cancer ♋</option><option>Leo ♌</option><option>Virgo ♍</option>
+          <option>Libra ♎</option><option>Scorpio ♏</option><option>Sagittarius ♐</option>
+          <option>Capricorn ♑</option><option>Aquarius ♒</option><option>Pisces ♓</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Current Life Concern (optional)</label>
+        <textarea id="concern" placeholder="Describe what you seek guidance on — career change, relationship, health, finances..."></textarea>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="runPrediction()">✦ Reveal My Destiny</button>
+  </div>
+
+  <!-- CAREER TAB -->
+  <div class="tab-content" id="tab-career">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Current Career</label>
+        <input type="text" id="career-current" placeholder="e.g. Software Engineer, Teacher">
+      </div>
+      <div class="form-group">
+        <label>Career Goal</label>
+        <input type="text" id="career-goal" placeholder="e.g. Entrepreneur, Doctor">
+      </div>
+      <div class="form-group full">
+        <label>Career Challenges</label>
+        <textarea id="career-challenge" placeholder="What obstacles are you facing professionally?"></textarea>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="runCareerPrediction()">✦ Analyze Career Stars</button>
+  </div>
+
+  <!-- MARRIAGE TAB -->
+  <div class="tab-content" id="tab-marriage">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Relationship Status</label>
+        <select id="rel-status">
+          <option>Single</option>
+          <option>In a relationship</option>
+          <option>Engaged</option>
+          <option>Divorced</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Partner's Date of Birth (if known)</label>
+        <input type="date" id="partner-dob">
+      </div>
+      <div class="form-group full">
+        <label>Marriage Concerns</label>
+        <textarea id="marriage-concern" placeholder="When will I get married? Will it be a love or arranged marriage?"></textarea>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="runMarriagePrediction()">✦ Read Marriage Stars</button>
+  </div>
+
+  <!-- FINANCE TAB -->
+  <div class="tab-content" id="tab-finance">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Current Financial State</label>
+        <select id="fin-state">
+          <option>Stable but stagnant</option>
+          <option>Growing steadily</option>
+          <option>In debt or struggling</option>
+          <option>Wealthy and investing</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Primary Income Source</label>
+        <input type="text" id="income-source" placeholder="e.g. Job, Business, Investments">
+      </div>
+      <div class="form-group full">
+        <label>Financial Goals</label>
+        <textarea id="fin-goal" placeholder="What financial outcomes are you seeking? When do you expect growth?"></textarea>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="runFinancePrediction()">✦ Forecast Wealth</button>
+  </div>
+
+  <!-- LIFE PERIODS TAB -->
+  <div class="tab-content" id="tab-periods">
+    <p style="color:var(--text-dim); font-style:italic; margin-bottom:24px;">Based on Vimshottari Dasha system — the 120-year planetary period cycle used in Vedic astrology to map good and challenging life phases.</p>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Date of Birth</label>
+        <input type="date" id="period-dob">
+      </div>
+      <div class="form-group">
+        <label>Current Age</label>
+        <input type="number" id="period-age" min="1" max="100" placeholder="Age">
+      </div>
+    </div>
+    <button class="btn-primary" onclick="runPeriodPrediction()">✦ Map My Life Periods</button>
+  </div>
+
+  <!-- RESULT BOX -->
+  <div id="result-box">
+    <div class="result-panel" id="result-content"></div>
+  </div>
+</section>
+
+<div class="divider"><div class="divider-line"></div><div class="divider-symbol">♁</div><div class="divider-line"></div></div>
+
+<!-- PALM READING -->
+<section id="palm-section">
+  <div class="section-label">Chiromancy</div>
+  <h2 class="section-title">Palm Reading</h2>
+
+  <div class="palm-container" style="display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:start;">
+    <div>
+      <div class="palm-upload-zone" id="palm-zone">
+        <input type="file" accept="image/*" id="palm-file" onchange="handlePalmUpload(event)">
+        <span class="palm-icon">🤚</span>
+        <div class="palm-upload-title">Upload Your Palm Photo</div>
+        <p class="palm-upload-sub">Take a clear photo of your dominant hand under good lighting. Open palm, fingers together.</p>
+      </div>
+      <img id="palm-preview" src="" alt="Palm preview">
+      <div style="margin-top:20px;" id="palm-analyze-btn" style="display:none;">
+        <button class="btn-primary" style="display:none;" id="analyze-palm-btn" onclick="analyzePalm()">✦ Analyze Palm</button>
+      </div>
+    </div>
+
+    <div id="palm-lines-result">
+      <div class="palm-lines">
+        <div class="line-card">
+          <div class="line-name">☀ Life Line</div>
+          <div class="line-reading">Upload your palm to receive a reading of your vitality, health, and major life changes encoded in your life line.</div>
+        </div>
+        <div class="line-card">
+          <div class="line-name">♡ Heart Line</div>
+          <div class="line-reading">The heart line governs emotional intelligence, romantic relationships, and your capacity for love and connection.</div>
+        </div>
+        <div class="line-card">
+          <div class="line-name">☿ Head Line</div>
+          <div class="line-reading">Your intellectual style, decision-making patterns, and the domains where your mind excels are written in the head line.</div>
+        </div>
+        <div class="line-card">
+          <div class="line-name">♄ Fate Line</div>
+          <div class="line-reading">Career trajectory, life calling, and the degree of external influence versus self-determination in your path.</div>
+        </div>
+        <div class="line-card">
+          <div class="line-name">☿ Mercury Line</div>
+          <div class="line-reading">Health of the nervous system, communication gifts, business acumen, and intuitive abilities.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:40px; text-align:center;">
+    <button class="btn-primary" onclick="showPalmReading()">✦ Get Full Palm Reading (Demo)</button>
+  </div>
+</section>
+
+<div class="divider"><div class="divider-line"></div><div class="divider-symbol">✦</div><div class="divider-line"></div></div>
+
+<!-- THUMB READING -->
+<section id="thumb-section">
+  <div class="section-label">Thumb Analysis</div>
+  <h2 class="section-title">Secrets of the Thumb</h2>
+
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:30px;" class="reveal">
+    <div class="feature-card">
+      <span class="feature-icon">👍</span>
+      <div class="feature-title">First Phalange (Will)</div>
+      <p class="feature-desc">The tip of your thumb reveals the strength of your willpower, determination, and leadership. A broad tip = decisive. Pointed = creative. Waist-shaped = diplomatic.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🧠</span>
+      <div class="feature-title">Second Phalange (Logic)</div>
+      <p class="feature-desc">The middle section reveals reasoning ability. Long = excellent logic. Short = relies on intuition. Thick = practical. Thin = idealistic planner.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">♥</span>
+      <div class="feature-title">Mount of Venus</div>
+      <p class="feature-desc">The fleshy base of the thumb (mount of Venus) governs love, sensuality, vitality, and generosity. Firm and prominent = passionate nature.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📐</span>
+      <div class="feature-title">Thumb Angle</div>
+      <p class="feature-desc">90° = generous and open. 45° = balanced temperament. 30° or less = reserved, cautious, careful with resources. Over 90° = highly extroverted.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🌊</span>
+      <div class="feature-title">Flexibility</div>
+      <p class="feature-desc">A flexible thumb = adaptable, generous, and open-minded. Stiff = disciplined, cautious, fixed in views. The bend at the top joint tells the most about emotional flexibility.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔮</span>
+      <div class="feature-title">Thumb Reading</div>
+      <p class="feature-desc">In South Indian palmistry, the thumb alone can reveal a person's entire character, destiny, and fate with remarkable accuracy — each whorl, ridge, and line a cosmic signature.</p>
+    </div>
+  </div>
+
+  <div style="text-align:center; margin-top:40px;">
+    <button class="btn-primary" onclick="doThumbReading()">✦ Read My Thumb</button>
+  </div>
+  <div id="thumb-result" style="margin-top:30px; display:none;"></div>
+</section>
+
+<div class="divider"><div class="divider-line"></div><div class="divider-symbol">♃</div><div class="divider-line"></div></div>
+
+<!-- ZODIAC -->
+<section id="zodiac-section">
+  <div class="section-label">Zodiac Signs</div>
+  <h2 class="section-title">The Twelve Houses of the Sky</h2>
+
+  <div class="zodiac-grid reveal">
+    <div class="zodiac-card" onclick="showZodiac('Aries','Mar 21 – Apr 19','Fire','Mars','Bold, ambitious, and pioneering. Natural leaders with fierce courage.')">
+      <span class="zodiac-glyph">♈</span>
+      <div class="zodiac-name">Aries</div>
+      <div class="zodiac-date">Mar 21 – Apr 19</div>
+    </div>
+    <div class="zodiac-card" onclick="showZodiac('Taurus','Apr 20 – May 20','Earth','Venus','Patient, reliable, devoted. Deep love for beauty, comfort, and stability.')">
+      <span class="zodiac-glyph">♉</span>
+      <div class="zodiac-name">Taurus</div>
+      <div class="zodiac-date">Apr 20 – May 20</div>
+    </div>
+    <div class="zodiac-card" onclick="showZodiac('Gemini','May 21 – Jun 20','Air','Mercury','Curious, adaptable, witty. Master communicators with dual nature.')">
+      <span class="zodiac-glyph">♊</span>
+      <div class="zodiac-name">Gemini</div>
+      <div class="zodiac-date">May 21 – Jun 20</div>
+    </div>
+    <div class="zodiac-card" onclick="showZodiac('Cancer','Jun 21 – Jul 22','Water','Moon','Intuitive, empathetic, nurturing. Deeply connected to home and family.')">
+      <span class="zodiac-glyph">♋</span>
+      <div class="zodiac-name">Cancer</div>
+      <div class="zodiac-date">Jun 21 – Jul 22</div>
+    </div>
+    <div class="zodiac-card" onclick="showZodiac('Leo','Jul 23 – Aug 22','Fire','Sun','Charismatic, generous, theatrical. Born to shine and lead with heart.')">
+      <span class="zodiac-glyph">♌</span>
+      <div class="zodiac-name">Leo</div>
+      <div class="zodiac-date">Jul 23 – Aug 22</div>
+    </div>
+    <div class="zodiac-card" onclick="showZodiac('Virgo','Aug 23 – Sep 22','Earth','Mercury','Analytical, perfectionist, practical. A healer with extraordinary attention to detail.')">
+      <span class="zodiac-glyph">♍</span>
+      <div class="zodiac-name">Virgo</div>
+      <div class="zodiac-date">Aug 23 – Sep 22</div>
+    </div>
+    <div class="zodiac-card" onclick="showZodiac('Libra','Sep 23 – Oct 22','Air','Venus','Charming, diplomatic, just. Seeks balance, beauty, and harmonious relationships.')">
+      <span class="zodiac-glyph">♎</span>
+      <div class="zodiac-name">Libra</div>
+      <div class="zodiac-date">Sep 23 – Oct 22</div>
+    </div>
+    <div class="zodiac-card" onclick="showZodiac('Scorpio','Oct 23 – Nov 21','Water','Mars/Pluto','Intense, magnetic, transformative. Master of hidden depths and regeneration.')">
+      <span class="zodiac-glyph">♏</span>
+      <div class="zodiac-name">Scorpio</div>
+      <div class="zodiac-date">Oct 23 – Nov 21</div>
+    </div>
+    <div class="zodiac-card" onclick="showZodiac('Sagittarius','Nov 22 – Dec 21','Fire','Jupiter','Adventurous, philosophical, freedom-loving. The eternal seeker of truth.')">
+      <span class="zodiac-glyph">♐</span>
+      <div class="zodiac-name">Sagittarius</div>
+      <div class="zodiac-date">Nov 22 – Dec 21</div>
+    </div>
+    <div class="zodiac-card" onclick="showZodiac('Capricorn','Dec 22 – Jan 19','Earth','Saturn','Disciplined, ambitious, resilient. Builds empires through patience and hard work.')">
+      <span class="zodiac-glyph">♑</span>
+      <div class="zodiac-name">Capricorn</div>
+      <div class="zodiac-date">Dec 22 – Jan 19</div>
+    </div>
+    <div class="zodiac-card" onclick="showZodiac('Aquarius','Jan 20 – Feb 18','Air','Saturn/Uranus','Visionary, humanitarian, eccentric. The revolutionary who changes the world.')">
+      <span class="zodiac-glyph">♒</span>
+      <div class="zodiac-name">Aquarius</div>
+      <div class="zodiac-date">Jan 20 – Feb 18</div>
+    </div>
+    <div class="zodiac-card" onclick="showZodiac('Pisces','Feb 19 – Mar 20','Water','Jupiter/Neptune','Mystical, compassionate, artistic. Lives between worlds, touched by the divine.')">
+      <span class="zodiac-glyph">♓</span>
+      <div class="zodiac-name">Pisces</div>
+      <div class="zodiac-date">Feb 19 – Mar 20</div>
+    </div>
+  </div>
+
+  <div id="zodiac-detail" style="margin-top:40px; display:none;">
+    <div class="result-panel" id="zodiac-detail-content"></div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-logo">✦ CosmicSeer</span>
+  <p class="footer-desc">Ancient wisdom encoded in the stars, the planets, and the sacred lines of your hands — interpreted through the lens of modern AI.</p>
+  <div class="footer-copy">© 2026 CosmicSeer • For Entertainment & Spiritual Guidance</div>
+</footer>
+
+<script>
+// ============ CURSOR ============
+const cursor = document.getElementById('cursor');
+const cursorDot = document.getElementById('cursor-dot');
+document.addEventListener('mousemove', e => {
+  cursor.style.left = e.clientX + 'px';
+  cursor.style.top = e.clientY + 'px';
+  cursorDot.style.left = e.clientX + 'px';
+  cursorDot.style.top = e.clientY + 'px';
+});
+
+document.querySelectorAll('button, a, .zodiac-card, .feature-card, .line-card, .result-card').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    cursor.style.transform = 'translate(-50%, -50%) scale(2.5)';
+    cursor.style.borderColor = '#f0d080';
+  });
+  el.addEventListener('mouseleave', () => {
+    cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+    cursor.style.borderColor = '#c9a84c';
+  });
+});
+
+// ============ STAR CANVAS ============
+const canvas = document.getElementById('starCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const stars = [];
+for (let i = 0; i < 250; i++) {
+  stars.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 1.5,
+    a: Math.random(),
+    speed: Math.random() * 0.003 + 0.001,
+    drift: (Math.random() - 0.5) * 0.1
+  });
+}
+
+function drawStars() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  stars.forEach(s => {
+    s.a += s.speed;
+    s.x += s.drift;
+    if (s.x > canvas.width) s.x = 0;
+    if (s.x < 0) s.x = canvas.width;
+    const alpha = Math.abs(Math.sin(s.a));
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(240, 210, 100, ${alpha * 0.8})`;
+    ctx.fill();
+  });
+  requestAnimationFrame(drawStars);
+}
+drawStars();
+
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+// ============ ZODIAC WHEEL CANVAS ============
+const zc = document.getElementById('zodiacCanvas');
+const zctx = zc.getContext('2d');
+let angle = 0;
+
+function drawZodiacWheel() {
+  zctx.clearRect(0, 0, 900, 900);
+  zctx.save();
+  zctx.translate(450, 450);
+  zctx.rotate(angle);
+
+  for (let i = 0; i < 5; i++) {
+    const r = 80 + i * 70;
+    zctx.beginPath();
+    zctx.arc(0, 0, r, 0, Math.PI * 2);
+    zctx.strokeStyle = `rgba(201,168,76,${0.5 - i * 0.08})`;
+    zctx.lineWidth = 0.5;
+    zctx.stroke();
+  }
+
+  const signs = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+  signs.forEach((s, i) => {
+    const a = (i / 12) * Math.PI * 2;
+    const x = Math.cos(a) * 380;
+    const y = Math.sin(a) * 380;
+    zctx.font = '28px serif';
+    zctx.fillStyle = 'rgba(201,168,76,0.7)';
+    zctx.textAlign = 'center';
+    zctx.textBaseline = 'middle';
+    zctx.fillText(s, x, y);
+
+    zctx.beginPath();
+    zctx.moveTo(Math.cos(a) * 80, Math.sin(a) * 80);
+    zctx.lineTo(Math.cos(a) * 350, Math.sin(a) * 350);
+    zctx.strokeStyle = 'rgba(201,168,76,0.1)';
+    zctx.lineWidth = 0.5;
+    zctx.stroke();
+  });
+
+  zctx.restore();
+  angle += 0.001;
+  requestAnimationFrame(drawZodiacWheel);
+}
+drawZodiacWheel();
+
+// ============ PARTICLES ============
+function createParticle() {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  p.style.left = Math.random() * 100 + 'vw';
+  p.style.width = p.style.height = (Math.random() * 3 + 1) + 'px';
+  p.style.background = `rgba(201,168,76,${Math.random() * 0.5 + 0.2})`;
+  p.style.animationDuration = (Math.random() * 15 + 10) + 's';
+  p.style.animationDelay = (Math.random() * 5) + 's';
+  document.body.appendChild(p);
+  setTimeout(() => p.remove(), 25000);
+}
+setInterval(createParticle, 1500);
+
+// ============ TABS ============
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    document.getElementById('result-box').style.display = 'none';
+  });
+});
+
+// ============ PREDICTION ENGINE ============
+function getZodiacFromDOB(dob) {
+  if (!dob) return { sign: 'Unknown', element: 'Unknown', lord: 'Unknown' };
+  const d = new Date(dob);
+  const m = d.getMonth() + 1, day = d.getDate();
+  const signs = [
+    {sign:'Capricorn',element:'Earth',lord:'Saturn',glyph:'♑'},
+    {sign:'Aquarius',element:'Air',lord:'Saturn',glyph:'♒'},
+    {sign:'Pisces',element:'Water',lord:'Jupiter',glyph:'♓'},
+    {sign:'Aries',element:'Fire',lord:'Mars',glyph:'♈'},
+    {sign:'Taurus',element:'Earth',lord:'Venus',glyph:'♉'},
+    {sign:'Gemini',element:'Air',lord:'Mercury',glyph:'♊'},
+    {sign:'Cancer',element:'Water',lord:'Moon',glyph:'♋'},
+    {sign:'Leo',element:'Fire',lord:'Sun',glyph:'♌'},
+    {sign:'Virgo',element:'Earth',lord:'Mercury',glyph:'♍'},
+    {sign:'Libra',element:'Air',lord:'Venus',glyph:'♎'},
+    {sign:'Scorpio',element:'Water',lord:'Mars',glyph:'♏'},
+    {sign:'Sagittarius',element:'Fire',lord:'Jupiter',glyph:'♐'},
+    {sign:'Capricorn',element:'Earth',lord:'Saturn',glyph:'♑'}
+  ];
+  const cutoffs = [20,19,20,20,21,21,22,22,21,22,21,21,31];
+  const idx = (day <= cutoffs[m-1]) ? m - 1 : m;
+  return signs[Math.min(idx, 12)];
+}
+
+function showLoader(msg) {
+  document.getElementById('loader').classList.add('active');
+  document.querySelector('.loading-text').textContent = msg || 'Consulting the Stars...';
+}
+function hideLoader() { document.getElementById('loader').classList.remove('active'); }
+
+function showNotif(msg) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.classList.add('show');
+  setTimeout(() => n.classList.remove('show'), 4000);
+}
+
+function animateMeters() {
+  setTimeout(() => {
+    document.querySelectorAll('.meter-fill').forEach(m => {
+      m.style.width = m.dataset.val + '%';
+    });
+  }, 100);
+}
+
+function runPrediction() {
+  const name = document.getElementById('name').value;
+  const dob = document.getElementById('dob').value;
+  if (!name || !dob) { showNotif('Please enter your name and date of birth'); return; }
+
+  showLoader('Reading your birth chart...');
+  setTimeout(() => {
+    hideLoader();
+    const z = getZodiacFromDOB(dob);
+    const age = new Date().getFullYear() - new Date(dob).getFullYear();
+
+    const careerScore = 55 + Math.floor(Math.random() * 40);
+    const wealthScore = 45 + Math.floor(Math.random() * 50);
+    const loveScore = 50 + Math.floor(Math.random() * 45);
+    const healthScore = 60 + Math.floor(Math.random() * 35);
+
+    const marriageYears = [2025, 2026, 2027, 2028, 2029];
+    const marriageYear = marriageYears[Math.floor(Math.random() * 3)];
+
+    const result = `
+      <div style="margin-bottom:24px;">
+        <div style="font-family:'Cinzel Decorative',serif; font-size:1.3rem; color:var(--gold); margin-bottom:4px;">${name}</div>
+        <div style="font-family:'Rajdhani',sans-serif; font-size:0.75rem; letter-spacing:3px; color:var(--text-dim);">
+          ${z.glyph} ${z.sign} — ${z.element} Sign — Ruled by ${z.lord}
+        </div>
+      </div>
+
+      <div class="result-grid">
+        <div class="result-card">
+          <span class="result-card-icon">💼</span>
+          <div class="result-card-label">Career Peak</div>
+          <div class="result-card-value">${2026 + Math.floor(age/10)}–${2028 + Math.floor(age/10)}</div>
+          <div class="result-card-detail">Jupiter transit 10th house</div>
+        </div>
+        <div class="result-card">
+          <span class="result-card-icon">💍</span>
+          <div class="result-card-label">Marriage Window</div>
+          <div class="result-card-value">${marriageYear}–${marriageYear+1}</div>
+          <div class="result-card-detail">Venus-Jupiter conjunction</div>
+        </div>
+        <div class="result-card">
+          <span class="result-card-icon">💰</span>
+          <div class="result-card-label">Wealth Growth</div>
+          <div class="result-card-value">2027–2030</div>
+          <div class="result-card-detail">Saturn lord of 2nd house</div>
+        </div>
+        <div class="result-card">
+          <span class="result-card-icon">🌙</span>
+          <div class="result-card-label">Lucky Number</div>
+          <div class="result-card-value">${[3,5,7,8,9][Math.floor(Math.random()*5)]}</div>
+          <div class="result-card-detail">Based on birth date numerology</div>
+        </div>
+      </div>
+
+      <div style="margin-top:30px;">
+        <div style="font-family:'Rajdhani',sans-serif; font-size:0.7rem; letter-spacing:3px; color:var(--gold-dim); margin-bottom:16px;">PLANETARY STRENGTH ANALYSIS</div>
+        <div class="meter-wrap"><div class="meter-label-row"><span>Career & Ambition</span><span>${careerScore}%</span></div><div class="meter-bar"><div class="meter-fill" data-val="${careerScore}"></div></div></div>
+        <div class="meter-wrap"><div class="meter-label-row"><span>Wealth & Finance</span><span>${wealthScore}%</span></div><div class="meter-bar"><div class="meter-fill" data-val="${wealthScore}"></div></div></div>
+        <div class="meter-wrap"><div class="meter-label-row"><span>Love & Relationships</span><span>${loveScore}%</span></div><div class="meter-bar"><div class="meter-fill" data-val="${loveScore}"></div></div></div>
+        <div class="meter-wrap"><div class="meter-label-row"><span>Health & Vitality</span><span>${healthScore}%</span></div><div class="meter-bar"><div class="meter-fill" data-val="${healthScore}"></div></div></div>
+      </div>
+
+      <div style="margin-top:24px; padding:20px; border:1px solid rgba(201,168,76,0.1); background:rgba(201,168,76,0.02);">
+        <div style="font-family:'Cinzel Decorative',serif; font-size:0.9rem; color:var(--gold); margin-bottom:12px;">✦ Cosmic Guidance</div>
+        <p style="color:var(--text-dim); font-style:italic; line-height:1.8;">As a ${z.sign} ruled by ${z.lord}, your soul came here to master ${z.element === 'Fire' ? 'courage and action' : z.element === 'Earth' ? 'material mastery and patience' : z.element === 'Air' ? 'communication and intellectual growth' : 'emotional wisdom and intuition'}. The stars indicate a powerful period of transformation approaching. Trust the cosmic timing — your ${z.lord}'s current transit through your ascendant signals a new chapter is being written in the celestial ledger of your life.</p>
+      </div>
+    `;
+
+    document.getElementById('result-content').innerHTML = result;
+    document.getElementById('result-box').style.display = 'block';
+    animateMeters();
+    document.getElementById('result-box').scrollIntoView({ behavior: 'smooth' });
+    showNotif('✦ Your cosmic blueprint has been revealed');
+  }, 2500);
+}
+
+function runCareerPrediction() {
+  showLoader('Aligning career constellations...');
+  setTimeout(() => {
+    hideLoader();
+    const scores = {
+      'tech': 88, 'business': 75, 'arts': 82, 'law': 70, 'medicine': 78
+    };
+    const html = `
+      <div style="font-family:'Cinzel Decorative',serif; color:var(--gold); margin-bottom:20px;">Career Astrology Reading</div>
+      <div class="result-grid">
+        <div class="result-card"><span class="result-card-icon">🚀</span><div class="result-card-label">Peak Career Year</div><div class="result-card-value">2027</div><div class="result-card-detail">Jupiter in 10th house</div></div>
+        <div class="result-card"><span class="result-card-icon">⭐</span><div class="result-card-label">Best Domain</div><div class="result-card-value">Technology</div><div class="result-card-detail">Mercury-Sun conjunction</div></div>
+        <div class="result-card"><span class="result-card-icon">📈</span><div class="result-card-label">Promotion Window</div><div class="result-card-value">Mid 2026</div><div class="result-card-detail">Saturn Dasha favorable</div></div>
+        <div class="result-card"><span class="result-card-icon">🌍</span><div class="result-card-label">Foreign Opportunity</div><div class="result-card-value">2026–2027</div><div class="result-card-detail">Rahu 9th house transit</div></div>
+      </div>
+      <div style="margin-top:24px; padding:20px; border:1px solid rgba(201,168,76,0.1);">
+        <p style="color:var(--text-dim); font-style:italic; line-height:1.8;">Saturn's current transit signals a period of disciplined effort now yielding extraordinary rewards. The 10th house lord is strong — recognition and authority positions are on your horizon. Avoid impulsive career changes between October–December 2026 when Mercury retrogrades in your career house. The period of 2027–2029 will be your golden professional phase.</p>
+      </div>
+    `;
+    document.getElementById('result-content').innerHTML = html;
+    document.getElementById('result-box').style.display = 'block';
+    document.getElementById('result-box').scrollIntoView({ behavior: 'smooth' });
+    animateMeters();
+  }, 2000);
+}
+
+function runMarriagePrediction() {
+  showLoader('Reading Venus & the 7th house...');
+  setTimeout(() => {
+    hideLoader();
+    const html = `
+      <div style="font-family:'Cinzel Decorative',serif; color:var(--gold); margin-bottom:20px;">Marriage & Relationship Reading</div>
+      <div class="result-grid">
+        <div class="result-card"><span class="result-card-icon">💍</span><div class="result-card-label">Marriage Window</div><div class="result-card-value">2026–2027</div><div class="result-card-detail">Venus-Jupiter trine</div></div>
+        <div class="result-card"><span class="result-card-icon">❤️</span><div class="result-card-label">Marriage Type</div><div class="result-card-value">Love-based</div><div class="result-card-detail">7th lord in 5th house</div></div>
+        <div class="result-card"><span class="result-card-icon">✨</span><div class="result-card-label">Best Month</div><div class="result-card-value">Nov–Feb</div><div class="result-card-detail">Auspicious Venus transit</div></div>
+        <div class="result-card"><span class="result-card-icon">🌹</span><div class="result-card-label">Compatibility</div><div class="result-card-value">Earth & Water</div><div class="result-card-detail">Elemental harmony</div></div>
+      </div>
+      <div style="margin-top:24px; padding:20px; border:1px solid rgba(201,168,76,0.1);">
+        <p style="color:var(--text-dim); font-style:italic; line-height:1.8;">Venus, the planet of love, enters a highly favorable position in your 7th house of partnerships from mid-2026 onwards. The Rahu-Ketu axis indicates a fated connection — someone from a different background or culture may enter your life. This relationship will feel karmic, intense, and transformative. For those already in a relationship, 2026 brings deepening commitment and possibly marriage.</p>
+      </div>
+    `;
+    document.getElementById('result-content').innerHTML = html;
+    document.getElementById('result-box').style.display = 'block';
+    document.getElementById('result-box').scrollIntoView({ behavior: 'smooth' });
+  }, 2000);
+}
+
+function runFinancePrediction() {
+  showLoader('Calculating Jupiter cycles...');
+  setTimeout(() => {
+    hideLoader();
+    const html = `
+      <div style="font-family:'Cinzel Decorative',serif; color:var(--gold); margin-bottom:20px;">Financial Astrology Forecast</div>
+      <div class="result-grid">
+        <div class="result-card"><span class="result-card-icon">💰</span><div class="result-card-label">Wealth Peak</div><div class="result-card-value">2028–2030</div><div class="result-card-detail">Jupiter in 2nd & 11th</div></div>
+        <div class="result-card"><span class="result-card-icon">📊</span><div class="result-card-label">Investment Window</div><div class="result-card-value">Q3 2026</div><div class="result-card-detail">Favorable Mercury period</div></div>
+        <div class="result-card"><span class="result-card-icon">⚠️</span><div class="result-card-label">Caution Period</div><div class="result-card-value">2026 Oct–Dec</div><div class="result-card-detail">Saturn square Venus</div></div>
+        <div class="result-card"><span class="result-card-icon">🏦</span><div class="result-card-label">Best Investment</div><div class="result-card-value">Real Estate</div><div class="result-card-detail">Venus lord of 2nd house</div></div>
+      </div>
+      <div style="margin-top:20px;">
+        <div style="font-family:'Rajdhani',sans-serif; font-size:0.7rem; letter-spacing:3px; color:var(--gold-dim); margin-bottom:12px;">DASHA WEALTH PERIODS</div>
+        <div class="meter-wrap"><div class="meter-label-row"><span>2025–2026</span><span>62%</span></div><div class="meter-bar"><div class="meter-fill" data-val="62"></div></div></div>
+        <div class="meter-wrap"><div class="meter-label-row"><span>2027–2028</span><span>85%</span></div><div class="meter-bar"><div class="meter-fill" data-val="85"></div></div></div>
+        <div class="meter-wrap"><div class="meter-label-row"><span>2029–2030</span><span>91%</span></div><div class="meter-bar"><div class="meter-fill" data-val="91"></div></div></div>
+      </div>
+      <div style="margin-top:16px; padding:20px; border:1px solid rgba(201,168,76,0.1);">
+        <p style="color:var(--text-dim); font-style:italic; line-height:1.8;">Jupiter's upcoming transit through your 11th house of gains (2027–2028) is one of the most wealth-generating transits in astrology. Diversify income streams now. Real estate acquisitions made in 2026 will appreciate significantly. Avoid speculative investments in early 2026 — wait for Jupiter's direct motion in Q3 2026 before making major financial moves.</p>
+      </div>
+    `;
+    document.getElementById('result-content').innerHTML = html;
+    document.getElementById('result-box').style.display = 'block';
+    document.getElementById('result-box').scrollIntoView({ behavior: 'smooth' });
+    animateMeters();
+  }, 2200);
+}
+
+function runPeriodPrediction() {
+  showLoader('Mapping Vimshottari Dasha...');
+  setTimeout(() => {
+    hideLoader();
+    const html = `
+      <div style="font-family:'Cinzel Decorative',serif; color:var(--gold); margin-bottom:20px;">Life Period Map — Vimshottari Dasha</div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-dot good"></div>
+          <div class="timeline-period">2023–2025 — Venus Dasha <span class="badge-good">✦ Favorable</span></div>
+          <div class="timeline-desc">A period of love, beauty, artistic expression and material comfort. Relationships flourish. Creativity peaks. Financial stability through consistent effort. Ideal for marriage.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot neutral"></div>
+          <div class="timeline-period">2025–2027 — Sun Dasha <span class="badge-neutral">⟡ Mixed</span></div>
+          <div class="timeline-desc">Ego confrontations and authority challenges. Father figure may play important role. Career recognition possible but at personal cost. Health requires attention. Leadership opportunities emerge.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot good"></div>
+          <div class="timeline-period">2027–2029 — Jupiter Dasha <span class="badge-good">✦ Highly Auspicious</span></div>
+          <div class="timeline-desc">The most powerful benefic period. Wealth expansion, spiritual growth, higher education, and foreign travels. Marriage and children blessings. Career pinnacle. The universe opens its bounty.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot bad"></div>
+          <div class="timeline-period">2029–2032 — Saturn Dasha <span class="badge-bad">⚠ Challenging</span></div>
+          <div class="timeline-desc">Saturn demands karmic payment. Hard work with delayed rewards. Health of elderly family members may need attention. Legal matters possible. Stay disciplined — this period builds incredible character and eventual success.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot good"></div>
+          <div class="timeline-period">2032–2035 — Mercury Dasha <span class="badge-good">✦ Favorable</span></div>
+          <div class="timeline-desc">Intellectual renaissance. Business acumen sharpens. Communication, writing, teaching, and trade excel. Multiple income streams emerge. Travel and networking bring unexpected windfalls.</div>
+        </div>
+      </div>
+    `;
+    document.getElementById('result-content').innerHTML = html;
+    document.getElementById('result-box').style.display = 'block';
+    document.getElementById('result-box').scrollIntoView({ behavior: 'smooth' });
+  }, 2500);
+}
+
+// ============ PALM READING ============
+function handlePalmUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById('palm-preview');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    document.getElementById('analyze-palm-btn').style.display = 'inline-block';
+    showNotif('✦ Palm image loaded — ready for analysis');
+  };
+  reader.readAsDataURL(file);
+}
+
+function showPalmReading() {
+  showLoader('Reading the sacred lines...');
+  setTimeout(() => {
+    hideLoader();
+    const lines = document.querySelectorAll('.line-reading');
+    const readings = [
+      'Your life line is long, deep, and curves beautifully around the Mount of Venus — indicating robust health, great vitality, and a life of rich experiences extending well into old age. A fork near the end suggests retirement in a foreign land.',
+      'A deeply curved, long heart line reaching toward your index finger indicates idealistic love with high emotional standards. You love deeply but guard your heart. A small break near the middle suggests one significant emotional wound that transformed you.',
+      'Your head line slopes gently downward — the mark of a creative, imaginative intellect. You combine logic with intuition. A fork at the end (the "Writer\'s Fork") suggests dual talents in both creative and analytical domains.',
+      'Your fate line rises clearly from the wrist to the middle finger — a destiny determined by your own efforts rather than luck. A break around your 30s indicates a significant career shift that proved ultimately rewarding.',
+      'A clear Mercury line running alongside your heart line indicates strong intuition, healing ability, and business acumen. This line blesses you with communication gifts and often appears in those drawn to healing or psychology.'
+    ];
+    lines.forEach((el, i) => el.textContent = readings[i]);
+    showNotif('✦ Palm lines have been interpreted');
+  }, 2500);
+}
+
+function analyzePalm() { showPalmReading(); }
+
+// ============ THUMB READING ============
+function doThumbReading() {
+  showLoader('Analyzing thumb formation...');
+  setTimeout(() => {
+    hideLoader();
+    const readings = [
+      { title: 'First Phalange — Will Power', text: 'Your thumb tip appears broad and firm — the mark of exceptional willpower and decisive leadership. You finish what you start and rarely give up under pressure. This is the thumb of a born executive or entrepreneur.', score: 82 },
+      { title: 'Second Phalange — Logic', text: 'A proportionate second phalange indicates balanced reasoning — you neither over-think nor act rashly. The slight waist formation suggests diplomatic intelligence and the ability to present ideas persuasively.', score: 75 },
+      { title: 'Flexibility Reading', text: 'A moderately flexible thumb indicates an adaptable personality who is generous under normal circumstances but knows when to hold firm. You are neither rigidly stubborn nor dangerously impulsive.', score: 70 },
+      { title: 'Angle Analysis', text: 'A thumb angle between 70–80° suggests a balanced, warm personality with healthy boundaries. You are naturally giving but protect your personal space and energy wisely.', score: 85 }
+    ];
+
+    const html = `
+      <div class="result-panel">
+        <div style="font-family:'Cinzel Decorative',serif; color:var(--gold); margin-bottom:24px;">Thumb Reading Analysis</div>
+        ${readings.map(r => `
+          <div style="margin-bottom:20px; padding:20px; border:1px solid rgba(201,168,76,0.1);">
+            <div style="font-family:'Cinzel Decorative',serif; font-size:0.85rem; color:var(--gold); margin-bottom:8px;">${r.title}</div>
+            <p style="color:var(--text-dim); font-style:italic; line-height:1.7; margin-bottom:12px;">${r.text}</p>
+            <div class="meter-bar"><div class="meter-fill" data-val="${r.score}"></div></div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    document.getElementById('thumb-result').innerHTML = html;
+    document.getElementById('thumb-result').style.display = 'block';
+    document.getElementById('thumb-result').scrollIntoView({ behavior: 'smooth' });
+    animateMeters();
+  }, 2000);
+}
+
+// ============ ZODIAC DETAIL ============
+function showZodiac(name, dates, element, lord, desc) {
+  const detail = document.getElementById('zodiac-detail');
+  const content = document.getElementById('zodiac-detail-content');
+  const glyphs = {'Aries':'♈','Taurus':'♉','Gemini':'♊','Cancer':'♋','Leo':'♌','Virgo':'♍','Libra':'♎','Scorpio':'♏','Sagittarius':'♐','Capricorn':'♑','Aquarius':'♒','Pisces':'♓'};
+
+  const careerMatch = {Fire:'Entrepreneurship, Military, Sports, Leadership, Sales', Earth:'Finance, Agriculture, Architecture, Management, Medicine', Air:'Journalism, Law, Technology, Education, Psychology', Water:'Arts, Healing, Social Work, Music, Spirituality'};
+  const compatibility = {Fire:'Aries, Leo, Sagittarius, Libra, Aquarius', Earth:'Taurus, Virgo, Capricorn, Cancer, Scorpio', Air:'Gemini, Libra, Aquarius, Aries, Leo', Water:'Cancer, Scorpio, Pisces, Taurus, Capricorn'};
+
+  content.innerHTML = `
+    <div style="display:grid; grid-template-columns:1fr 2fr; gap:30px; align-items:start;">
+      <div style="text-align:center;">
+        <div style="font-size:6rem; filter:drop-shadow(0 0 30px rgba(201,168,76,0.4));">${glyphs[name]}</div>
+        <div style="font-family:'Cinzel Decorative',serif; font-size:1.5rem; color:var(--gold);">${name}</div>
+        <div style="font-family:'Rajdhani',sans-serif; font-size:0.75rem; letter-spacing:3px; color:var(--text-dim); margin-top:8px;">${dates}</div>
+        <div style="margin-top:16px; display:flex; justify-content:center; gap:20px;">
+          <div style="text-align:center;"><div style="font-size:0.65rem; letter-spacing:2px; color:var(--gold-dim); font-family:Rajdhani,sans-serif;">ELEMENT</div><div style="color:var(--gold);">${element}</div></div>
+          <div style="text-align:center;"><div style="font-size:0.65rem; letter-spacing:2px; color:var(--gold-dim); font-family:Rajdhani,sans-serif;">RULER</div><div style="color:var(--gold);">${lord}</div></div>
+        </div>
+      </div>
+      <div>
+        <p style="color:var(--text); font-style:italic; line-height:1.8; margin-bottom:20px; font-size:1.05rem;">${desc}</p>
+        <div style="margin-bottom:14px;"><div style="font-family:Rajdhani,sans-serif; font-size:0.7rem; letter-spacing:3px; color:var(--gold-dim); margin-bottom:6px;">BEST CAREERS</div><div style="color:var(--text-dim); font-style:italic;">${careerMatch[element]}</div></div>
+        <div style="margin-bottom:14px;"><div style="font-family:Rajdhani,sans-serif; font-size:0.7rem; letter-spacing:3px; color:var(--gold-dim); margin-bottom:6px;">COMPATIBILITY</div><div style="color:var(--text-dim); font-style:italic;">${compatibility[element]}</div></div>
+        <div><div style="font-family:Rajdhani,sans-serif; font-size:0.7rem; letter-spacing:3px; color:var(--gold-dim); margin-bottom:6px;">2026 FORECAST</div><div style="color:var(--text-dim); font-style:italic;">Jupiter's transit through your sign this year brings expansion, abundance, and new opportunities. This is a landmark year for ${name} natives — take bold steps in career and love.</div></div>
+      </div>
+    </div>
+  `;
+
+  detail.style.display = 'block';
+  detail.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ============ REVEAL ON SCROLL ============
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      const fills = e.target.querySelectorAll('.meter-fill');
+      fills.forEach(f => {
+        setTimeout(() => { f.style.width = f.dataset.val + '%'; }, 200);
+      });
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
